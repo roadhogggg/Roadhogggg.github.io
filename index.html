@@ -1,85 +1,146 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Overwatch Fan Page</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
-
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Orbitron', sans-serif;
-      color: white;
-      text-align: center;
-      background: url("background.jpg") no-repeat center center fixed;
-      background-size: cover;
-    }
-
-    /* Dark overlay */
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: -1;
-    }
-
-    header {
-      padding: 30px;
-      font-size: 40px;
-      color: #f99e1a;
-      text-shadow: 0 0 20px #f99e1a;
-    }
-
-    .content {
-      margin-top: 100px;
-    }
-
-    .button {
-      display: inline-block;
-      margin-top: 30px;
-      padding: 15px 30px;
-      background: #f99e1a;
-      color: black;
-      font-weight: bold;
-      text-decoration: none;
-      border-radius: 6px;
-      transition: 0.3s;
-    }
-
-    .button:hover {
-      background: white;
-      box-shadow: 0 0 20px #f99e1a;
-    }
-
-    footer {
-      position: fixed;
-      bottom: 10px;
-      width: 100%;
-      font-size: 12px;
-      opacity: 0.7;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Reinhardt Fan Site + Game</title>
+<style>
+body{margin:0;overflow:hidden;font-family:Arial;background:#111;color:white;}
+.screen{position:absolute;width:100%;height:100%;display:none;justify-content:center;align-items:center;flex-direction:column;}
+.active{display:flex;}
+h1{color:gold;text-shadow:0 0 10px gold;}
+button{margin:10px;padding:15px 40px;background:gold;border:none;border-radius:10px;font-size:20px;cursor:pointer;transition:.3s;}
+button:hover{transform:scale(1.1);background:orange;}
+/* UI */
+#ui{position:fixed;top:10px;left:10px;}
+.bar{width:200px;height:20px;border:2px solid white;margin:5px 0;}
+.fill{height:100%;}
+#hp{background:red;}#sp{background:cyan;}
+#score{margin-top:5px;}
+/* Player/Game elements */
+.player{width:40px;height:40px;background:gold;position:absolute;transition:transform .1s;}
+.enemy{width:30px;height:30px;background:red;position:absolute;}
+.boss{width:80px;height:80px;background:purple;position:absolute;}
+.projectile{width:10px;height:10px;background:orange;position:absolute;border-radius:50%;}
+.wall{position:absolute;background:#555;}
+#flash{position:fixed;width:100%;height:100%;background:white;opacity:0;pointer-events:none;z-index:999;}
+#gameOver{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;text-align:center;}
+</style>
 </head>
-
 <body>
 
-  <header>OVERWATCH</header>
+<!-- MAIN MENU -->
+<div id="menu" class="screen active">
+  <h1>REINHARDT FAN SITE</h1>
+  <button onclick="show('game')">PLAY GAME</button>
+  <button onclick="show('about')">ABOUT</button>
+  <button onclick="show('controls')">CONTROLS</button>
+</div>
 
-  <div class="content">
-    <h2>⚡ Welcome, Hero</h2>
-    <p>The world needs you.</p>
-    <a href="#" class="button">Enter the Fight</a>
+<!-- ABOUT -->
+<div id="about" class="screen">
+  <h1>ABOUT</h1>
+  <p>This site is dedicated to Reinhardt from Overwatch. Play the mini-game below!</p>
+  <button onclick="show('menu')">BACK</button>
+</div>
+
+<!-- CONTROLS -->
+<div id="controls" class="screen">
+  <h1>CONTROLS</h1>
+  <p>Move: WASD / Arrows</p>
+  <p>Shield: SPACE</p>
+  <p>Hammer attack: Click</p>
+  <p>Charge: Q | Earthshatter: E | Fire Strike: F</p>
+  <button onclick="show('menu')">BACK</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game" class="screen">
+  <div id="ui">
+    <div>HP</div><div class="bar"><div id="hp" class="fill"></div></div>
+    <div>Shield</div><div class="bar"><div id="sp" class="fill"></div></div>
+    <div id="score">Score: 0</div>
+    <div>Abilities: Q-Charge E-Earth F-Fire</div>
   </div>
+  <div id="player" class="player"></div>
+  <div id="flash"></div>
+  <div id="gameOver"><h1>GAME OVER</h1><button onclick="restart()">RESTART</button></div>
+</div>
 
-  <footer>
-    Fan-made site inspired by Overwatch.
-  </footer>
+<script>
+// SCREEN NAV
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 
+// GAME VARIABLES
+let player=document.getElementById("player");
+let flash=document.getElementById("flash");
+let x=300,y=300,speed=4,hp=100,shield=100,score=0;
+let keys={},enemies=[],projectiles=[],boss=null;
+let cooldowns={earth:0,charge:0,fire:0};
+let arena={width:window.innerWidth-40,height:window.innerHeight-40};
+let mouse={x:0,y:0};
+document.addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+document.addEventListener("keydown",e=>keys[e.key]=true);
+document.addEventListener("keyup",e=>keys[e.key]=false);
+
+// SPAWN ENEMIES
+function spawnEnemy(){let e=document.createElement("div");e.className="enemy";e.x=Math.random()*arena.width;e.y=Math.random()*arena.height;document.body.appendChild(e);enemies.push(e);}
+setInterval(spawnEnemy,1200);
+
+// SPAWN BOSS
+function spawnBoss(){boss=document.createElement("div");boss.className="boss";boss.x=200;boss.y=200;boss.hp=50;document.body.appendChild(boss);}
+
+// GAME LOOP
+function gameLoop(){
+  if(showScreen=='menu'){requestAnimationFrame(gameLoop);return;}
+  if(hp<=0){document.getElementById("gameOver").style.display="block";return;}
+  if(score>0 && score%20===0 && !boss) spawnBoss();
+  // MOVE
+  if(keys["w"])y-=speed;if(keys["s"])y+=speed;if(keys["a"])x-=speed;if(keys["d"])x+=speed;
+  x=Math.max(0,Math.min(arena.width,x)); y=Math.max(0,Math.min(arena.height,y));
+  player.style.left=x+"px"; player.style.top=y+"px";
+
+  let usingShield=keys[" "]; if(usingShield && shield>0) shield-=0.6; else if(shield<100) shield+=0.3;
+
+  // ENEMIES
+  enemies.forEach(e=>{let dx=x-e.x,dy=y-e.y,dist=Math.hypot(dx,dy);e.x+=dx/dist*1.5;e.y+=dy/dist*1.5;e.style.left=e.x+"px"; e.style.top=e.y+"px";if(dist<30 && !usingShield) hp-=0.3;});
+
+  // BOSS
+  if(boss){let dx=x-boss.x,dy=y-boss.y,dist=Math.hypot(dx,dy);boss.x+=dx/dist*2;boss.y+=dy/dist*2;boss.style.left=boss.x+"px";boss.style.top=boss.y+"px";if(dist<40) hp-=0.5;}
+
+  // PROJECTILES
+  projectiles.forEach(p=>{p.x+=p.dx*5;p.y+=p.dy*5;p.style.left=p.x+"px";p.style.top=p.y+"px";
+    enemies=enemies.filter(e=>{let d=Math.hypot(p.x-e.x,p.y-e.y);if(d<20){e.remove();score++;return false;}return true;});
+    if(boss){let d=Math.hypot(p.x-boss.x,p.y-boss.y);if(d<40){boss.hp--;if(boss.hp<=0){boss.remove();boss=null;score+=10;}}}
+  });
+
+  // COOLDOWNS
+  for(let k in cooldowns) if(cooldowns[k]>0) cooldowns[k]--;
+
+  // UI
+  document.getElementById("hp").style.width=hp+"%";
+  document.getElementById("sp").style.width=shield+"%";
+  document.getElementById("score").innerText="Score: "+score;
+
+  requestAnimationFrame(gameLoop);
+}
+let showScreen='menu';gameLoop();
+
+// ATTACK
+document.addEventListener("click",()=>{
+  enemies=enemies.filter(e=>{let d=Math.hypot(e.x-x,e.y-y);if(d<80){e.remove();score++;return false;}return true;});
+});
+
+// EARTHSHATTER
+document.addEventListener("keydown",e=>{if(e.key==="e" && cooldowns.earth<=0){enemies.forEach(e=>e.remove());enemies=[];cooldowns.earth=300;flash.style.opacity=0.5;setTimeout(()=>flash.style.opacity=0,100);}});
+
+// CHARGE
+document.addEventListener("keydown",e=>{if(e.key==="q" && cooldowns.charge<=0){x+=100*(mouse.x>x?1:-1);y+=100*(mouse.y>y?1:-1);cooldowns.charge=200;}});
+
+// FIRE STRIKE
+document.addEventListener("keydown",e=>{if(e.key==="f" && cooldowns.fire<=0){let p=document.createElement("div");p.className="projectile";let dx=mouse.x-x,dy=mouse.y-y,dist=Math.hypot(dx,dy);p.x=x;p.y=y;p.dx=dx/dist;p.dy=dy/dist;document.body.appendChild(p);projectiles.push(p);cooldowns.fire=100;}});
+
+// RESTART
+function restart(){hp=100;shield=100;score=0;enemies.forEach(e=>e.remove());enemies=[];if(boss){boss.remove();boss=null;}show('game');}
+</script>
 </body>
 </html>
-
